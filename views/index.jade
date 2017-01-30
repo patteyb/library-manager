@@ -1,0 +1,43 @@
+extends layout
+
+block content
+    .container.right
+      img.child(src='../images/books.png', alt='Some image') 
+      p.org-name Morristown<br />Public Library
+    .container.left
+      h1 Library Manager
+      p Welcome to #{title}
+      ul
+        li
+          | Books
+          ul
+            li
+              a(href='/books/new') New Book
+            li
+              a(href='/books/all?offset=0&order=title&search=%') List All
+            li
+              a(href='/books/overdue?offset=0&order=title&search=%') List Overdue
+            li
+              a(href='/books/out?offset=0&order=title&search=%') List Checked Out
+        li
+          | Patrons
+          ul
+            li
+              a(href='/patrons/new') New Patron
+            li
+              a(href='/patrons/all?offset=0&order=name&search=%') List All
+        li
+          | Loans
+          ul
+            li
+              a(href='/loans/new') New Loan
+            li
+              a(href='/loans/all?offset=0&order=title&search=%') List All
+            li
+              a(href='/books/overdue?offset=0&order=title&search=%') List Overdue
+            li
+              a(href='/books/out?offset=0&order=title&search=%') List Checked Out
+    
+
+    
+

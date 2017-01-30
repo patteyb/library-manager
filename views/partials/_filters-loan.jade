@@ -1,0 +1,12 @@
+h1 #{title}
+if title == 'Checked-out Loans' 
+      h4.late-message Return By dates in red are overdue.
+p
+      a.button(href='/loans/new') Create New Loan
+p
+      span.inline-option Filters: 
+      a.inline-option(href='/loans/all?offset=0&order=#{pagination.order}&search=#{pagination.search}') All
+      |  
+      a.inline-option(href='/loans/overdue?offset=0&order=#{pagination.order}&search=#{pagination.search}') Overdue
+      |  
+      a.inline-option(href='/loans/out?offset=0&order=#{pagination.order}&search=#{pagination.search}') Checked Out

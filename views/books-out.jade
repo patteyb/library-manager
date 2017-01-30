@@ -1,0 +1,24 @@
+doctype html
+html
+  include ./partials/_head.jade
+
+  body
+    include ./partials/_filters.jade
+    include ./partials/_orderby.jade
+    table
+      thead
+        tr
+          th Title
+          th Author
+          th Genre
+          th Year Released
+          th Return By
+      tbody
+      each book in books
+        tr
+          td
+            a(href='/bookid=#{book.id}') #{book.title}
+          td #{book.author}
+          td #{book.genre}
+          td #{book.first_published}
+          td(class=book.loans[0].return_by < pastDue ? "late" : "ok") #{book.loans[0].return_by}

@@ -1,0 +1,20 @@
+doctype 
+head
+    link(rel='stylesheet', href='../stylesheets/style.css')
+html
+  
+  body.error-500
+    .container-500
+        nav.not-found-nav
+            ul
+                li
+                    a(href='/') Main
+                li
+                    a(href='/books/all?offset=0&order=title') Books
+                li
+                    a(href='/patrons/all?offset=0&order=name&search=%') Patrons
+                li
+                    a(href='/loans/all?offset=0&order=title&search=%') Loans
+        div
+            h1 Oh, snap! We're on a reading break and unable to complete your request.
+                | Try again, and if the problem persists see a librarian.

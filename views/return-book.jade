@@ -1,0 +1,23 @@
+doctype html
+html
+  include ./partials/_head.jade
+  body
+    h1 #{title}
+    p
+      strong Book Title: 
+      | #{loan.book.title}
+    p
+      strong Loaned By: 
+      | #{loan.patron.first_name} #{loan.patron.last_name}
+    p
+      strong Loaned On: 
+      | #{loan.loaned_on}
+    p
+      strong Return By: 
+      | #{loan.return_by}
+    form(action='#{loan.id}?_method=PUT', method='post')
+      p
+        label(for='returned_on') Returned on:
+        input#returned_on(type='text' name='returned_on' value=loan.returned_on)
+      p
+        input(type='submit', value='Return Book')

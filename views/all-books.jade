@@ -1,0 +1,31 @@
+doctype html
+html
+  include ./partials/_head.jade
+  
+  body
+    include ./partials/_filters.jade
+    include ./partials/_orderby.jade
+    table
+      thead
+        tr
+          th Title
+          th Author
+          th Genre
+          th Year Released
+      tbody
+      each book in books
+        tr
+          td
+            a(href='/book?id=#{book.id}') #{book.title}
+          td #{book.author}
+          td #{book.genre}
+          td #{book.first_published}
+    p 
+      .pages-container
+        if pagination.numPages > 1
+          strong Select a Page 
+          - for (var x = 1; x <= pagination.numPages; x++) {
+            - var offset = (x-1) * pagination.limit
+            a.pages(class=x == pagination.offset/10 + 1  ? "selected-box" : "" href='/books/all?offset=#{offset}&order=#{pagination.order}') #{x}
+          - }
+        

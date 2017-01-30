@@ -1,0 +1,47 @@
+doctype html
+html
+  include ./partials/_head.jade
+  body
+    h1 #{title}
+    include ./partials/_error.jade
+    form(action='/book?#{book.id}?_method=PUT', method='post')
+      p
+        label(for='title') Title
+        input#title(type='text' name='title' value=book.title)
+      p
+        label(for='author') Author
+        input#author(type='text' name='author' value=book.author)
+      p
+        label(for='genre') Genre
+        input#genre(type='text' name='genre' value=book.genre)
+      p
+        label(for='first_published') First Published
+        input#first_published(type='text' name='first_published'  value=book.first_published)
+      p
+        label(for='status') Status
+        input#status(type='text' name='status' value=book.status)  
+      p
+        input(type='submit', value='Update')
+    if book.loans.length > 0 
+        h2 Loan History
+        table
+            thead
+                tr
+                    th Book
+                    th Patron 
+                    th Loaned on
+                    th Return by 
+                    th Returned on
+                    th Action
+            tbody
+            each loan in book.loans
+                tr
+                td #{book.title}
+                td
+                    a(href='/patron?id=#{loan.patron.id}') #{loan.patron.first_name}  #{loan.patron.last_name}
+                td #{loan.loaned_on}
+                td #{loan.return_by}
+                td #{loan.returned_on}
+                td
+                    if loan.returned_on == null
+                        a.button(href='/return/#{book.id}') Return Book

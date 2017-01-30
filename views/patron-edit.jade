@@ -1,0 +1,51 @@
+doctype html
+html
+  include ./partials/_head.jade
+  body
+    h1 #{title} #{patron.first_name} #{patron.last_name}
+    include ./partials/_error.jade
+    form(action='/patron/#{patron.id}?_method=PUT', method='post')
+      p
+        label(for='first_name') First Name
+        input#first_name(type='text' name="first_name" value=patron.first_name)
+      p
+        label(for='last_name') Last Name
+        input#last_name(type='text' name="last_name" value=patron.last_name)
+      p
+        label(for='address')  Address
+        input#address(type='text' name="address" value=patron.address)
+      p
+        label(for='email') Email
+        input#email(type='text' name="email" value=patron.email)
+      p
+        label(for='library_id') Library ID
+        input#library_id(type='text' name="library_id" value=patron.library_id)
+      p
+        label(for='zip_code') Zip Code
+        input#zip_code(type='text' name="zip_code" value=patron.zip_code)
+      p
+        input(type='submit', value='Update')
+    if patron.loans.length > 0 
+      h2 Loan History
+      table
+        thead
+          tr
+            th Book
+            th Patron 
+            th Loaned on
+            th Return by 
+            th Returned on
+            th Action
+        tbody
+        each loan in patron.loans
+          tr
+            td
+              a(href='/book?id=#{loan.book.id}') #{loan.book.title}
+            td #{patron.first_name} #{patron.last_name}
+            td #{loan.loaned_on}
+            td #{loan.return_by}
+            td #{loan.returned_on}
+            td 
+              if loan.returned_on == null
+                a.button(href='return_book.html') Return Book
+        

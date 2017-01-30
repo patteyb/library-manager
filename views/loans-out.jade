@@ -1,0 +1,29 @@
+doctype html
+html
+  include ./partials/_head.jade
+
+  body
+    include ./partials/_filters-loan.jade
+    include ./partials/_orderby-loan.jade
+    table
+      thead
+        tr
+          th Title
+          th Patron
+          th Loaned on
+          th Return by
+          th Returned on
+          th Action
+      tbody
+      each loan in loans
+        tr
+          td
+            a(href='/#{loan.book_id}') #{loan.book.title}
+          td 
+            a(href='/patron/#{loan.patron.id}') #{loan.patron.first_name} #{loan.patron.last_name} 
+          td #{loan.loaned_on}
+          td(class=loan.return_by < pastDue ? "late" : "ok") #{loan.return_by}
+          td #{loan.returned_on}
+          td
+            if loan.returned_on == null
+              a.button(href='/return/#{loan.book_id}') Return Book
