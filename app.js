@@ -45,7 +45,7 @@ app.use(function(err, req, res, next) {
 
   // render 404 page
   if (err.status === 404) {
-    res.render('500');
+    res.render('404');
   }
   
   // render the error page
