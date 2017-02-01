@@ -4,7 +4,7 @@ html
   body
     h1 #{title}
     include ./partials/_error.jade
-    form(action='/book?#{book.id}?_method=PUT', method='post')
+    form(action='/book/#{book.id}?_method=PUT', method='post')
       p
         label(for='title') Title
         input#title(type='text' name='title' value=book.title)

@@ -1,0 +1,9 @@
+p
+      form(action='?offset=0&order=#{pagination.order}', method='get')
+        select(name='searchOn')
+          option(value='title', selected='') Search by Title
+          option(value='author') Search by Author
+          option(value='genre') Search by Genre
+        input#searchbox(type='text' name='searchStr' placeholder='Enter text')
+        input(type='submit', value='Search')
+        a(href='?offset=0&order=title&search=off').back-link Back to full list

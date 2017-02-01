@@ -10,10 +10,14 @@ var pagination = {
   limit: 10,
   offset: 0,
   order: 'title',
-  search: '%',
+  title: '%',
+  author: '%',
+  genre: '%',
   numRecords: 0,
   numPages: 1
 };
+
+var subtitle = '';
 
 /** GET home page. */
 router.get('/', function(req, res, next) {
@@ -22,16 +26,30 @@ router.get('/', function(req, res, next) {
 
 /** GET list of all books */
 router.get('/books/all', function(req, res, next) {
-  getPaging(req.query, pagination, function() {
-    Book.findAll({
+  console.log('IN GET /books/all: ', req.query.searchOn, req.query.searchStr);
+  getSearchAndOrder(req.query, pagination, function() {
+    Book.findAndCountAll({
         order: [[pagination.order, 'ASC']],
+        where: {
+           title: {$like: pagination.title},
+           author: {$like: pagination.author},
+           genre: {$like: pagination.genre}
+        },
         limit: pagination.limit,
         offset: pagination.offset
       })
       .then(function(books) {
-        res.render('all-books', { books: books, pagination: pagination, title: "Books" });
+        pagination.numRecords = books.count;
+        pagination.numPages = Math.ceil(pagination.numRecords / pagination.limit);
+        getSubtitle(req.query, function() {
+          res.render('all-books', { 
+            books: books.rows, 
+            pagination: pagination, 
+            title: 'Books', 
+            subtitle: subtitle});
+        });
       }); 
-  });
+   });
 });
 
 
@@ -64,15 +82,17 @@ router.get('/book', function(req, res, next) {
 });
 
 /** PUT Update book in database */
-router.put('/book', function(req, res, next) {
-  Book.findById(req.query.id).then(function(book) {
+router.put('/book/:id', function(req, res, next) {
+  console.log('IN PUT: ', req.params.id);
+  Book.findById(req.params.id).then(function(book) {
     if(book) {
       return book.update(req.body);
     } else {
-      res.send(404);
+      throw 500;
+      //res.sendStatus(500);
     }
   }).then(function(book) {
-    res.redirect('/books');
+    res.redirect('/books/all');
   }).catch(function(error) {
     var errors = error;
     if(error.name === "SequelizeValidationError") {
@@ -90,8 +110,8 @@ router.put('/book', function(req, res, next) {
 
 /** GET All books that are overdue */
 router.get('/books/overdue', function(req, res, next) {
-  getPaging(req.query, pagination, function() {
-    Book.findAll({
+  getSearchAndOrder(req.query, pagination, function() {
+    Book.findAndCountAll({
       include: [{ 
         model: Loan, 
         where: {
@@ -102,19 +122,31 @@ router.get('/books/overdue', function(req, res, next) {
         } 
       }],
       order: [[pagination.order, 'ASC']],
+      where: {
+           title: {$like: pagination.title},
+           author: {$like: pagination.author},
+           genre: {$like: pagination.genre}
+        },
       limit: pagination.limit,
       offset: pagination.offset
       }).then(function(books) {
-          var bookList = JSON.parse(JSON.stringify(books));
-          res.render('books-overdue', {books: books, pagination: pagination, title: 'Overdue Books'});
+          pagination.numRecords = books.count;
+          pagination.numPages = Math.ceil(pagination.numRecords / pagination.limit);
+          getSubtitle(req.query, function() {
+            res.render('books-overdue', {
+              books: books.rows, 
+              pagination: pagination, 
+              title: 'Overdue Books', 
+              subtitle: subtitle});
+          });
       });
-  });
+   });
 });
 
 /** GET All books that are checked out */
 router.get('/books/out', function(req, res, next) {
-  getPaging(req.query, pagination, function() {
-    Book.findAll({
+  getSearchAndOrder(req.query, pagination, function() {
+    Book.findAndCountAll({
       order: [[pagination.order, 'ASC']],
       include: [{ 
         model: Loan, 
@@ -123,45 +155,88 @@ router.get('/books/out', function(req, res, next) {
           } }],
       where: {
         status: 'OUT',
+        title: {$like: pagination.title},
+        author: {$like: pagination.author},
+        genre: {$like: pagination.genre}
       },
       limit: pagination.limit,
       offset: pagination.offset
     }).then(function(books) {
-        var bookList = JSON.parse(JSON.stringify(books));
-        var pastDue = moment().format('YYYY-MM-DD');
-        res.render('books-out', {
-          books: bookList, 
-          pastDue: pastDue, 
-          pagination: pagination,
-          title: 'Checked-out Books'
-        });
+       getSubtitle(req.query, function() {
+          pagination.numRecords = books.count;
+          pagination.numPages = Math.ceil(pagination.numRecords / pagination.limit);
+          //var bookList = JSON.parse(JSON.stringify(books));
+          var pastDue = moment().format('YYYY-MM-DD');
+          res.render('books-out', {
+            books: books.rows, 
+            pastDue: pastDue, 
+            pagination: pagination,
+            title: 'Checked-out Books', 
+            subtitle: subtitle
+          });
+       });
     });
   });
 });
 
 /** 
- * FUNCTION getPaging
- *    Sets the paging object to control pagination 
+ * FUNCTION getSearchAndOrder
+ *    Sets the fields of the pagination object that control database query and paging
  * 
  *    @param {object} query - query parameters from url
  *    @param {paging} paging contains pertinent control attributes for pagination
  *    @return callback function
  */ 
-function getPaging(query, paging, callback) {
+function getSearchAndOrder(query, paging, callback) {
+
   if (query.offset) {
     paging.offset = query.offset;
   }
   if (query.order) {
       paging.order = query.order;
   }
-  if (query.search && query.search !== paging.search) {
-    paging.search = query.search + '%';
-  }
-  Book.count().then(function(count) {
-    paging.numRecords = count;
-    paging.numPages = Math.ceil(paging.numRecords / paging.limit);
+
+  /** Check if search parameter came in on query.
+     * If so, turn off search parameters
+     */
+  if (query.search) {
+    if (query.search === 'off') {
+      paging.title = '%';
+      paging.author = '%';
+      paging.genre = '%';
+    }
+  // If there is a query search string,
+  // find what column to search on 
+  } else if (query.searchStr) {
+    if (query.searchOn === 'title') {
+      paging.title = query.searchStr + '%';
+    } else if (query.searchOn === 'author') {
+      paging.author = query.searchStr + '%';
+    } else if (query.searchOn === 'genre') {
+      paging.genre = query.searchStr + '%';
+    }
+  } 
     callback();
-  });
+}
+
+/** 
+ * FUNCTION getSubtitle
+ *    Contructs a subtitle to indicate active search parameters
+ * 
+ *    @param {object} query - query parameters from url
+ *    @return callback function
+ */ 
+function getSubtitle(query, callback) {
+  if (query.searchStr) {
+    if (subtitle !== '') {
+      subtitle = subtitle + ' AND ' + query.searchOn + ' begins with ' + query.searchStr;
+    } else if (subtitle === '') {
+        subtitle = 'WHERE ' + query.searchOn + ' begins with ' + query.searchStr;
+    } 
+  } else if (query.search) {
+    subtitle = '';
+  }
+  callback();
 }
 
 module.exports = router;

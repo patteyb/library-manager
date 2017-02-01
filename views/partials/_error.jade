@@ -1,4 +1,4 @@
 if (errors)
-  h4.error.error-title Couldn't save to database!
+  h4.red.error-title Couldn't save to database!
     each error in errors.errors
-      h4.error #{error.path}: #{error.message}
+      h4.red #{error.path}: #{error.message}

@@ -1,10 +1,11 @@
 doctype html
 html
-  include ./partials/_head.jade
+  include ./partials/_head
 
   body
-    include ./partials/_filters-loan.jade
-    include ./partials/_orderby-loan.jade
+    include ./partials/_filters-loans
+    include ./partials/_search-loans
+    include ./partials/_orderby-loans
     table
       thead
         tr
@@ -27,3 +28,13 @@ html
           td
             if loan.returned_on == null
               a.button(href='/return/#{loan.book_id}') Return Book
+  p 
+      .pages-container
+        if pagination.numPages > 1
+          strong Select a Page 
+          - for (var x = 1; x <= pagination.numPages; x++) {
+            - var offset = (x-1) * pagination.limit
+            a.pages(class=x == pagination.offset/10 + 1  ? "selected-box" : "" href='?offset=#{offset}&order=#{pagination.order}') #{x}
+          - }
+script.
+    document.getElementById('returned-on').disabled = true;

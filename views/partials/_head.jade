@@ -1,5 +1,5 @@
 head
-    title #{title}
+    title Morristown Library: #{title}
     link(rel='stylesheet', href='../stylesheets/style.css')
     link(rel='stylesheet', href='https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css')
   nav
@@ -7,8 +7,8 @@ head
       li
         a(href='/') Main
       li
-        a(href='/books/all?offset=0&order=title') Books
+        a(href='/books/all?offset=0&order=title&search=off') Books
       li
-        a(href='/patrons/all?offset=0&order=name&search=%') Patrons
+        a(href='/patrons/all?offset=0&order=name&search=off') Patrons
       li
-        a(href='/loans/all?offset=0&order=title&search=%') Loans
+        a(href='/loans/all?offset=0&order=title&search=off') Loans

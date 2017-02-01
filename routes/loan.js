@@ -10,7 +10,11 @@ var pagination = {
   limit: 10,
   offset: 0,
   order: 'title',
-  search: '%',
+  title: '%',
+  lastName: '%',
+  loanedOn: '%',
+  returnBy: '%',
+  returnedOn: '%', 
   numRecords: 0,
   numPages: 1
 };
@@ -23,50 +27,82 @@ router.get('/', function(req, res, next) {
 /** GET list of all loans */
 router.get('/loans/all', function(req, res, next) {
   var order;
-  getPaging(req.query, pagination, function() {
-    console.log('-----------ROUTER:', pagination);
+  getSearchAndOrder(req.query, pagination, function() {
     if (pagination.order === 'name') {
       order = "`last_name`, 'ASC', `first_name`, 'ASC'"; 
     } else {
       order = pagination.order;
     }
-    Loan.findAll({
+    Loan.findAndCountAll({
         order: order,
-        include: [ Book, Patron ],
+        include: [{ model: Book, 
+            where: {title: {$like: pagination.title}} 
+          }, { model: Patron, 
+            where: {last_name: {$like: pagination.lastName}}
+        }],
+        where: {
+          loaned_on: {$like: pagination.loanedOn},
+          return_by: {$like: pagination.returnBy},
+          returned_on: {$like: pagination.returnedOn}
+        },
         limit: pagination.limit,
         offset: pagination.offset
       })
       .then(function(loans) {
-        var pastDue = moment().format('YYYY-MM-DD');
-        res.render('all-loans', { loans: loans, pagination: pagination, pastDue: pastDue, title: 'Loans' });
+        pagination.numRecords = loans.count;
+        pagination.numPages = Math.ceil(pagination.numRecords / pagination.limit);
+        getSubtitle(req.query, function() {
+          var pastDue = moment().format('YYYY-MM-DD');
+          console.log('About to render...', pagination.numRecords);
+          res.render('all-loans', { 
+            loans: loans.rows, 
+            pagination: pagination, 
+            pastDue: pastDue, 
+            title: 'Loans',
+            subtitle: subtitle });
+        });
       });
-  });
+    });
 });
 
 /** GET All loans that are overdue */
 router.get('/loans/overdue', function(req, res, next) {
   var order;
-  getPaging(req.query, pagination, function() {
-    console.log('-----------ROUTER:', pagination);
+  getSearchAndOrder(req.query, pagination, function() {
     if (pagination.order === 'name') {
       order = "`last_name`, 'ASC', `first_name`, 'ASC'"; 
     } else {
       order = pagination.order;
     }
-    Loan.findAll({
-      order: order,
-      include: [ Book, Patron ],
+    Loan.findAndCountAll({
+        order: order,
+        include: [{ model: Book, 
+            where: {title: {$like: pagination.title}} 
+          }, { model: Patron, 
+            where: {last_name: {$like: pagination.lastName}}
+        }],
       where: {
         return_by: {
-          $lt: moment().format('YYYY-MM-DD')
+          $lt: moment().format('YYYY-MM-DD'),
+          loaned_on: {$like: pagination.loanedOn},
+          return_by: {$like: pagination.returnBy},
+          returned_on: {$like: pagination.returnedOn}
         },
         returned_on: null
       },
       limit: pagination.limit,
       offset: pagination.offset
     }).then(function(loans) {
-        var loanList = JSON.parse(JSON.stringify(loans));
-        res.render('loans-overdue', {loans: loans, pagination: pagination, title: 'Overdue Loans'});
+        pagination.numRecords = loans.count;
+        pagination.numPages = Math.ceil(pagination.numRecords / pagination.limit);
+        getSubtitle(req.query, function() {
+            res.render('loans-overdue', {
+              loans: loans.rows, 
+              pagination: pagination, 
+              title: 'Overdue Loans',
+              subtitle: subtitle
+            });
+        });
     });
   });
 });
@@ -74,31 +110,43 @@ router.get('/loans/overdue', function(req, res, next) {
 /** GET All loans that are checked out */
 router.get('/loans/out', function(req, res, next) {
   var order;
-  getPaging(req.query, pagination, function() {
-    console.log('-----------ROUTER:', pagination);
+  getSearchAndOrder(req.query, pagination, function() {
     if (pagination.order === 'name') {
       order = "`last_name`, 'ASC', `first_name`, 'ASC'"; 
     } else {
       order = pagination.order;
     }
-    Loan.findAll({
-      order: order,
-      include: [ Book, Patron ],
+    Loan.findAndCountAll({
+        order: order,
+        include: [{ model: Book, 
+            where: {title: {$like: pagination.title}} 
+          }, { model: Patron, 
+            where: {last_name: {$like: pagination.lastName}}
+        }],
       where: {
         '$book.status$': 'OUT',
+        loaned_on: {$like: pagination.loanedOn},
+        return_by: {$like: pagination.returnBy},
         returned_on: null
       },
       limit: pagination.limit,
       offset: pagination.offset
     }).then(function(loans) {
-        var loanList = JSON.parse(JSON.stringify(loans));
-        var pastDue = moment().format('YYYY-MM-DD');
-        //console.log("PAST DUE ", pastDue, ' ', bookList[0].loans[0].return_by, ' ', bookList[0].loans[0].return_by < pastDue);
-        res.render('loans-out', {loans: loanList, pagination: pagination, pastDue: pastDue, title: 'Checked-out Loans'});
+        pagination.numRecords = loans.count;
+        pagination.numPages = Math.ceil(pagination.numRecords / pagination.limit);
+        getSubtitle(req.query, function() {
+            var pastDue = moment().format('YYYY-MM-DD');
+            res.render('loans-out', {
+              loans: loans.rows, 
+              pagination: pagination, 
+              pastDue: pastDue, 
+              title: 'Checked-out Loans',
+              subtitle: subtitle
+            });
+        });
     });
   });
 });
-
 
 /** GET Adding a new loan -- display the form */
 router.get('/loans/new', function(req, res, next) {
@@ -176,30 +224,68 @@ router.put('/return/:id', function(req, res, next) {
 });
 
 /** 
- * FUNCTION getPaging
- *    Sets the paging object to control pagination 
+ * FUNCTION getSearchAndOrder
+ *    Sets the fields of the pagination object that control database query and paging
  * 
  *    @param {object} query - query parameters from url
  *    @param {paging} paging contains pertinent control attributes for pagination
  *    @return callback function
  */ 
-function getPaging(query, paging, callback) {
-    console.log('----------getPaging query: ', query);
+function getSearchAndOrder(query, paging, callback) {
     if (query.offset) {
       paging.offset = query.offset;
     }
     if (query.order) {
        paging.order = query.order;
     }
-    if (query.search && query.search !== paging.search) {
-      paging.search = query.search + '%';
+
+    /** Check if search parameter came in on query.
+     * If so, turn off search parameters
+     */
+    if (query.search) {
+      if (query.search === 'off') {
+        paging.title = '%';
+        paging.lastName = '%';
+        paging.loanedOn = '%';
+        paging.returnBy = '%';
+        paging.returnedOn = '%';
+      }
+    // If there is a query search string,
+    // find what column to search on 
+    } else if (query.searchStr) {
+      if (query.searchOn === 'title') {
+        paging.title = query.searchStr + '%';
+      } else if (query.searchOn === 'last-name') {
+        paging.lastName = query.searchStr + '%';
+      } else if (query.searchOn === 'loaned-on') {
+        paging.loanedOn = query.searchStr + '%';
+      } else if (query.searchOn === 'return-by') {
+        paging.returnBy = query.searchStr + '%';
+      } else if (query.searchOn === 'returned-on') {
+        paging.returnedOn = query.searchStr + '%';
+      }
+    } 
+    callback();
+}
+
+  /** 
+ * FUNCTION getSubtitle
+ *    Contructs a subtitle to indicate active search parameters
+ * 
+ *    @param {object} query - query parameters from url
+ *    @return callback function
+ */ 
+  function getSubtitle(query, callback) {
+    if (query.searchStr) {
+      if (subtitle !== '') {
+        subtitle = subtitle + ' AND ' + query.searchOn + ' begins with ' + query.searchStr;
+      } else if (subtitle === '') {
+          subtitle = 'Where ' + query.searchOn + ' begins with ' + query.searchStr;
+      } 
+    } else if (query.search) {
+      subtitle = '';
     }
-    Loan.count().then(function(count) {
-      paging.numRecords = count;
-      paging.numPages = Math.ceil(paging.numRecords / paging.limit);
-      console.log("-------------getPaging PAGING: ", paging);
-      callback();
-    });
-  }
+    callback();
+}
 
 module.exports = router;

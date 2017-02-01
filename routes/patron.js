@@ -9,10 +9,15 @@ var pagination = {
   limit: 10,
   offset: 0,
   order: 'name',
-  search: '%',
+  lastName: '%',
+  address: '%',
+  email: '%',
+  libraryId: '%',
   numRecords: 0,
   numPages: 1
 };
+
+var subtitle = '';
 
 /** GET home page */
 router.get('/', function(req, res, next) {
@@ -22,30 +27,37 @@ router.get('/', function(req, res, next) {
 /** GET list of all patrons */
 router.get('/patrons/all', function(req, res, next) {
   var order;
-  getPaging(req.query, pagination, function() {
+  getSearchAndOrder(req.query, pagination, function() {
+    // If ordering by name, set up database order string
     if (pagination.order === 'name') {
       order = "`last_name`, 'ASC', `first_name`, 'ASC'"; 
     } else {
       order = pagination.order;
     }
-    Patron.findAll({ 
+    Patron.findAndCountAll({ 
       order: order,
       where: {
-        last_name: {
-          $like: pagination.search
-        }
+        last_name: {$like: pagination.lastName},
+        address: {$like: pagination.address},
+        email: {$like: pagination.email},
+        library_id: {$like: pagination.libraryId}
       },
       limit: pagination.limit,
       offset: pagination.offset
     })
       .then(function(patrons) {
-        res.render('all-patrons', { 
-          patrons: patrons, 
-          pagination: pagination, 
-          title: 'Patrons' 
+        pagination.numRecords = patrons.count;
+        pagination.numPages = Math.ceil(pagination.numRecords / pagination.limit);
+        getSubtitle(req.query, function() {
+          res.render('all-patrons', { 
+            patrons: patrons.rows, 
+            pagination: pagination, 
+            title: 'Patrons' ,
+            subtitle: subtitle
+          });
         });
       });
-  });
+   });
 });
 
 
@@ -106,61 +118,67 @@ router.put('/patron/:id', function(req, res, next) {
   }); 
 });
 
-
-/** GET Search for patron */
-router.post('/patrons/find', function(req, res, next) {
-  var order;
-
-  getPaging(req.query, pageLimit, function(paging) {
-    pagination = paging;  
-    pagination.search = req.body.name;
-    if (pagination.order === 'name') {
-      order = "`last_name`, 'ASC', `first_name`, 'ASC'"; 
-    } else {
-      order = pagination.order;
-    }
-    Patron.findAll({
-      order: order,
-      where: {
-        last_name: {
-          $like: pagination.search + '%'
-        }
-      }
-    })
-      .then(function(patrons) {
-        res.render('all-patrons', { patrons: patrons, pagination: pagination, title: 'Patrons' });
-      });
-  });
-});
-
 /** 
- * FUNCTION getPaging
- *    Sets the paging object to control pagination 
+ * FUNCTION getSearchAndOrder
+ *    Sets the fields of the pagination object that control database query and paging
  * 
  *    @param {object} query - query parameters from url
  *    @param {paging} paging contains pertinent control attributes for pagination
  *    @return callback function
  */ 
-function getPaging(query, paging, callback) {
+function getSearchAndOrder(query, paging, callback) {
+
     if (query.offset) {
       paging.offset = query.offset;
     }
     if (query.order) {
        paging.order = query.order;
     }
-    if (query.search && query.search !== paging.search) {
-      paging.search = query.search + '%';
-    }
-    Patron.count({where: {
-        last_name: {
-          $like: pagination.search
-        }
-      } 
-    }).then(function(count) {
-      paging.numRecords = count;
-      paging.numPages = Math.ceil(paging.numRecords / paging.limit);
-      callback();
-    });
+
+    /** Check if search parameter came in on query.
+     * If so, turn off search parameters
+     */
+    if (query.search) {
+      if (query.search === 'off') {
+        paging.lastName = '%';
+        paging.address = '%';
+        paging.email = '%';
+        paging.libraryId = '%';
+      }
+    // If there is a query search string,
+    // find what column to search on 
+    } else if (query.searchStr) { 
+      if (query.searchOn === 'last-name') {
+        paging.lastName = query.searchStr + '%';
+      } else if (query.searchOn === 'address') {
+        paging.address = query.searchStr + '%';
+      } else if (query.searchOn === 'email') {
+        paging.email = query.searchStr + '%';
+      } else if (query.searchOn === 'library-id') {
+        paging.libraryId = query.searchStr + '%';
+      }
+    } 
+    callback();
   }
+
+/** 
+ * FUNCTION getSubtitle
+ *    Contructs a subtitle to indicate active search parameters
+ * 
+ *    @param {object} query - query parameters from url
+ *    @return callback function
+ */ 
+  function getSubtitle(query, callback) {
+    if (query.searchStr) {
+      if (subtitle !== '') {
+        subtitle = subtitle + ' AND ' + query.searchOn + ' begins with ' + query.searchStr;
+      } else if (subtitle === '') {
+          subtitle = 'WHERE ' + query.searchOn + ' begins with ' + query.searchStr;
+      } 
+    } else if (query.search) {
+      subtitle = '';
+    }
+    callback();
+}
 
 module.exports = router;

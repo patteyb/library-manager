@@ -1,17 +1,14 @@
 doctype html
 html
-  include ./partials/_head.jade
+  include ./partials/_head
   
   body
     h1 #{title}
+    h3.red #{subtitle}
     p
       a.button(href='/patrons/new') Create New Patron
-    form(action='/patrons/all?offset=0&order=#{pagination.order}', method='get')
-      p
-        input#name(type='text' name='search' placeholder='Enter last name')
-        input(type='submit', value='Search')
-        a(href='/patrons/all?offset:0&order=name&search=%').back-link Back to full list
-    include ./partials/_orderby-patron.jade
+    include ./partials/_search-patrons
+    include ./partials/_orderby-patrons
     table
       thead
         tr

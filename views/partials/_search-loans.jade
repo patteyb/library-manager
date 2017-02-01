@@ -1,0 +1,11 @@
+p
+      form(action='?offset=0&order=#{pagination.order}', method='get')
+        select(name='searchOn')
+          option(value='title', selected='') Search by Title
+          option(value='last-name') Search by Last Name
+          option(value='loaned-on') Search by Loaned On
+          option(value='return-by') Search by Return By
+          option#returned-on(value='returned-on') Search by Returned On
+        input#searchbox(type='text' name='searchStr' placeholder='Enter text')
+        input(type='submit', value='Search')
+        a(href='?offset=0&order=name&search=off').back-link Back to full list

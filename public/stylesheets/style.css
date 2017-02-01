@@ -18,6 +18,7 @@ a.button, input[type=submit] {
   font-size: 14px;
   border-radius: 2px;
   cursor: pointer;
+  margin-left: 0;
 }
 img {
   height: 400px;
@@ -27,7 +28,7 @@ img {
 }
 
 form a.button, input[type=submit] {
-  margin-left: 140px;
+  margin-left: 0px;
 }
 input[type=submit] {
   border: 0;
@@ -131,7 +132,7 @@ input[type=text], select {
   font-size: 1.2em;
 }
 
-.error {
+.red {
   color: firebrick;
 }
 
@@ -210,4 +211,25 @@ input[type=text], select {
   float: right;
   text-align: right;
   width: 350px;
+}
+
+#searchbox {
+  width: 150px;
+}
+
+select {
+  padding: 5px;
+  background: #019875;
+  border: 1px solid #019875;
+}
+
+.cancel {
+  color: white;
+  background-color: firebrick;
+  margin-left: 10px;
+  border-radius: 2px;
+}
+
+.cancel:hover {
+  background-color: red;
 }

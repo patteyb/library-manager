@@ -1,0 +1,10 @@
+p
+      form(action='?offset=0&order=#{pagination.order}', method='get')
+        select(name='searchOn')
+          option(value='last-name', selected='') Search by Last Name
+          option(value='address') Search by Address
+          option(value='email') Search by Email
+          option(value='library-id') Search by Library ID
+        input#searchbox(type='text' name='searchStr' placeholder='Enter text')
+        input(type='submit', value='Search')
+        a(href='?offset=0&order=name&search=off').back-link Back to full list
