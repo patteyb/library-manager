@@ -36,3 +36,6 @@ html
             - var offset = (x-1) * pagination.limit
             a.pages(class=x == pagination.offset/10 + 1  ? "selected-box" : "" href='?offset=#{offset}&order=#{pagination.order}') #{x}
           - }
+script.
+    document.getElementById('return-by').disabled = true;
+    document.getElementById('returned-on').disabled = true;

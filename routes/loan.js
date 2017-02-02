@@ -19,6 +19,8 @@ var pagination = {
   numPages: 1
 };
 
+var subtitle = '';
+
 /** GET home page */
 router.get('/', function(req, res, next) {
   res.render('index', { title: 'Library Manager' });
@@ -65,10 +67,11 @@ router.get('/loans/all', function(req, res, next) {
     });
 });
 
-/** GET All loans that are overdue */
+/** GET OVERDUE: All loans that are overdue */
 router.get('/loans/overdue', function(req, res, next) {
   var order;
   getSearchAndOrder(req.query, pagination, function() {
+    console.log('----------IN OVERDUE ROUTING: ', pagination);
     if (pagination.order === 'name') {
       order = "`last_name`, 'ASC', `first_name`, 'ASC'"; 
     } else {
@@ -82,20 +85,19 @@ router.get('/loans/overdue', function(req, res, next) {
             where: {last_name: {$like: pagination.lastName}}
         }],
       where: {
-        return_by: {
-          $lt: moment().format('YYYY-MM-DD'),
-          loaned_on: {$like: pagination.loanedOn},
-          return_by: {$like: pagination.returnBy},
-          returned_on: {$like: pagination.returnedOn}
-        },
+        return_by: {$lt: moment().format('YYYY-MM-DD')},
+        loaned_on: {$like: pagination.loanedOn},
         returned_on: null
       },
       limit: pagination.limit,
       offset: pagination.offset
     }).then(function(loans) {
+       console.log('----------IN OVERDUE ROUTING: loans:', loans.rows);
         pagination.numRecords = loans.count;
         pagination.numPages = Math.ceil(pagination.numRecords / pagination.limit);
         getSubtitle(req.query, function() {
+          console.log('Substitle: ', subtitle);
+          console.log(loans.rows);
             res.render('loans-overdue', {
               loans: loans.rows, 
               pagination: pagination, 
@@ -107,7 +109,7 @@ router.get('/loans/overdue', function(req, res, next) {
   });
 });
 
-/** GET All loans that are checked out */
+/** GET CHECKED OUT: All loans that are checked out */
 router.get('/loans/out', function(req, res, next) {
   var order;
   getSearchAndOrder(req.query, pagination, function() {
@@ -239,7 +241,7 @@ function getSearchAndOrder(query, paging, callback) {
        paging.order = query.order;
     }
 
-    /** Check if search parameter came in on query.
+    /** Check if 'search=off' came in on query.
      * If so, turn off search parameters
      */
     if (query.search) {
@@ -276,11 +278,12 @@ function getSearchAndOrder(query, paging, callback) {
  *    @return callback function
  */ 
   function getSubtitle(query, callback) {
+    console.log()
     if (query.searchStr) {
       if (subtitle !== '') {
         subtitle = subtitle + ' AND ' + query.searchOn + ' begins with ' + query.searchStr;
       } else if (subtitle === '') {
-          subtitle = 'Where ' + query.searchOn + ' begins with ' + query.searchStr;
+          subtitle = 'WHERE ' + query.searchOn + ' begins with ' + query.searchStr;
       } 
     } else if (query.search) {
       subtitle = '';
